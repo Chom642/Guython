@@ -1,72 +1,27 @@
 """control dependencies to support CRUD app routes and APIs"""
 from flask import Blueprint, render_template, request, url_for, redirect, jsonify, make_response
-from flask_login import login_required, logout_user
+# from crud.model import users
 
-from cruddy.query import *
+from cruddy.sql import *
 
 # blueprint defaults https://flask.palletsprojects.com/en/2.0.x/api/#blueprint-objects
 app_crud = Blueprint('crud', __name__,
                      url_prefix='/crud',
-                     template_folder='templates/cruddy/',
+                     template_folder='templates/crud/',
                      static_folder='static',
                      static_url_path='static')
 
-""" Blueprint is established to isolate Application control code for CRUD operations, key features:
-    1.) 'Users' table control methods, controls relationship between User Actions and Database Model
-    2.) Control methods are achieved using app routes for each CRUD operations
-    3.) login required to restrict CRUD operations to identified users
+""" Application control for CRUD is main focus of this File, key features:
+    1.) User table queries
+    2.) app routes for CRUD (Blueprint)
 """
 
 
-# Default URL for Blueprint
+# Default URL
 @app_crud.route('/')
-@login_required  # Flask-Login uses this decorator to restrict access to logged in users
 def crud():
     """obtains all Users from table and loads Admin Form"""
     return render_template("crud.html", table=users_all())
-
-
-# Flask-Login directs unauthorised users to this unauthorized_handler
-@login_manager.unauthorized_handler
-def unauthorized():
-    """Redirect unauthorized users to Login page."""
-    return redirect(url_for('crud.crud_login'))
-
-
-# if login url, show phones table only
-@app_crud.route('/login/', methods=["GET", "POST"])
-def crud_login():
-    # obtains form inputs and fulfills login requirements
-    if request.form:
-        email = request.form.get("email")
-        password = request.form.get("password")
-        if login(email, password):       # zero index [0] used as email is a tuple
-            return redirect(url_for('crud.crud'))
-
-    # if not logged in, show the login page
-    return render_template("login.html")
-
-
-@app_crud.route('/authorize/', methods=["GET", "POST"])
-def crud_authorize():
-    # check form inputs and creates user
-    if request.form:
-        # validation should be in HTML
-        user_name = request.form.get("user_name")
-        email = request.form.get("email")
-        password1 = request.form.get("password1")
-        password2 = request.form.get("password1")
-        phone = request.form.get("phone")                    # password should be verified
-        if authorize(user_name, email, password1, phone):    # zero index [0] used as user_name and email are type tuple
-            return redirect(url_for('crud.crud_login'))
-    # show the auth user page if the above fails for some reason
-    return render_template("authorize.html")
-
-
-@app_crud.route('/logout/', methods=["GET", "POST"])
-def crud_logout():
-    logout_user()
-    return render_template("main_page.html")
 
 
 # CRUD create/add
@@ -124,7 +79,6 @@ def delete():
 
 # Search Form
 @app_crud.route('/search/')
-@login_required
 def search():
     """loads form to search Users data"""
     return render_template("search.html")
@@ -138,3 +92,17 @@ def search_term():
     term = req['term']
     response = make_response(jsonify(users_ilike(term)), 200)
     return response
+
+flask_login.login_required
+#If you decorate a view with this, it will ensure that the current user is logged in and authenticated before calling the actual view. 
+#(If they are not, it calls the LoginManager.unauthorized callback.). 
+# Use this example for Hack #3.
+@app_crud.route('/')
+@login_required  # Flask-Login uses this decorator to restrict access to logged in users
+
+# Flask-Login directs unauthorised users to this unauthorized_handler
+@login_manager.unauthorized_handler
+def unauthorized():
+    """Redirect unauthorized users to Login page."""
+    return redirect(url_for('crud.crud_login'))
+T
